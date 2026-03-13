@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klimatskalskalkyl — Flerbostadshus</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F5F5;
+    --bg-card: #FFFFFF;
+    --primary: #1B3A4B;
+    --primary-light: #2a5468;
+    --accent: #E8B630;
+    --accent-light: #f0cc6a;
+    --highlight: #D4EDDA;
+    --highlight-border: #88c999;
+    --surface-soft: #F7FAF8;
+    --surface-strong: #EEF6F0;
+    --text: #2D2D2D;
+    --text-muted: #6B7280;
+    --border: #D1D5DB;
+    --input-bg: #FFFFFF;
+    --table-header-bg: var(--primary);
+    --table-header-text: #FFFFFF;
+    --table-stripe: #f9fafb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --error: #DC2626;
+  }
+  [data-theme="solcell"] {
+    --bg: #FFFFFF; --bg-card: #FFFFFF; --primary: #2E7D32; --primary-light: #43a047;
+    --accent: #F4A535; --accent-light: #f7bc64; --highlight: #FFF3E0; --highlight-border: #f4a535;
+    --text: #333333; --text-muted: #6B7280; --border: #D1D5DB; --table-stripe: #f1f8e9;
+  }
+  [data-theme="blueprint"] {
+    --bg: #FAFBFC; --bg-card: #FFFFFF; --primary: #37474F; --primary-light: #546e7a;
+    --accent: #0097A7; --accent-light: #26c6da; --highlight: #E0F7FA; --highlight-border: #0097A7;
+    --text: #37474F; --text-muted: #78909C; --border: #CFD8DC; --table-stripe: #f5f7f8;
+  }
+  [data-theme="koppar"] {
+    --bg: #FAF8F5; --bg-card: #FFFFFF; --primary: #6B3A2A; --primary-light: #8B5A4A;
+    --accent: #C17F4E; --accent-light: #d4a070; --highlight: #FDF0E2; --highlight-border: #C17F4E;
+    --text: #3B2F2F; --text-muted: #7D6B6B; --border: #D9CFC5; --table-stripe: #faf6f2;
+  }
+  [data-theme="lovverk"] {
+    --bg: #F4F7F2; --bg-card: #FFFFFF; --primary: #3D6B4F; --primary-light: #5A8A6A;
+    --accent: #A8C256; --accent-light: #bdd474; --highlight: #E8F0DC; --highlight-border: #8aaf3e;
+    --text: #2C3E2D; --text-muted: #6B7F6C; --border: #C5D4C0; --table-stripe: #f0f5ec;
+  }
+  [data-theme="kooperativ"] {
+    --bg: #FFFFFF; --bg-card: #FFFFFF; --primary: #0B0B0C; --primary-light: #1F1F22;
+    --accent: #E90016; --accent-light: #FF3B4A; --highlight: #F2F2F3; --highlight-border: #929196;
+    --text: #0B0B0C; --text-muted: #6C6C72; --border: #D6D6D8; --input-bg: #FFFFFF;
+    --table-header-bg: var(--primary); --table-header-text: #FFFFFF; --table-stripe: #F7F7F8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.08);
+    --shadow-lg: 0 6px 18px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.10);
+    --error: #E90016;
+  }
+  [data-theme="midnatt"] {
+    --bg: #1A1D23; --bg-card: #242830; --primary: #7EB8DA; --primary-light: #9acae6;
+    --accent: #F0C754; --accent-light: #f5d87a; --highlight: #2A3A2E; --highlight-border: #5a9a6a;
+    --text: #E0E0E0; --text-muted: #8B92A0; --border: #363B44; --input-bg: #2C3038;
+    --table-header-text: #1A1D23; --table-stripe: #20242a; --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  [data-theme="grafit"] {
+    --bg: #1E1E22; --bg-card: #28282E; --primary: #A0D4A0; --primary-light: #b8e0b8;
+    --accent: #E8A445; --accent-light: #f0be6e; --highlight: #2E3828; --highlight-border: #6aaa6a;
+    --text: #D8D8D8; --text-muted: #888890; --border: #3A3A42; --input-bg: #303036;
+    --table-header-text: #1E1E22; --table-stripe: #24242a; --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+    transition: background .25s ease, color .25s ease;
+  }
+  .container { max-width: 1460px; margin: 0 auto; padding: 24px 20px 60px; }
+  .theme-bar {
+    display: flex; justify-content: center; align-items: center; gap: 6px;
+    padding: 16px 0 8px; flex-wrap: wrap;
+  }
+  .theme-divider { width: 1px; height: 28px; background: var(--border); margin: 0 8px; }
+  .theme-btn {
+    display: flex; align-items: center; gap: 7px; padding: 7px 14px;
+    border: 2px solid var(--border); border-radius: 100px; background: var(--bg-card);
+    color: var(--text); font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .2s ease; letter-spacing: .01em;
+  }
+  .theme-btn:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .theme-btn.active { border-color: var(--primary); background: var(--primary); color: var(--table-header-text, #fff); }
+  .theme-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,.1); }
+
+  .header { text-align: center; padding: 28px 0 8px; max-width: 1100px; margin: 0 auto; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; margin-bottom: 8px; }
+  .header p { font-size: 15px; color: var(--text-muted); max-width: 780px; margin: 0 auto; }
+  .report-toggle { display: flex; justify-content: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 22px 24px 20px; margin: 18px auto; max-width: 1320px;
+  }
+  .card.wide-card { max-width: 100%; }
+  .card h2 { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 0; }
+  .card h3 { font-size: 16px; font-weight: 700; color: var(--primary); }
+  .section-line { width: 118px; height: 4px; border-radius: 999px; background: var(--accent); margin: 10px 0 18px; }
+
+  .grid-2, .grid-3, .grid-4, .kpi-grid, .chart-grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .kpi-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .chart-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  .field { margin-bottom: 14px; }
+  label, .field-label { display: block; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  small, .help-text { color: var(--text-muted); font-size: 12px; }
+  input, select, textarea {
+    width: 100%; border: 1px solid var(--border); background: var(--input-bg, var(--bg-card));
+    color: var(--text); border-radius: 12px; padding: 11px 14px; font-size: 14px; font-family: inherit;
+  }
+  textarea { min-height: 140px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(27,58,75,.08); }
+  .input-unit { position: relative; }
+  .input-unit input { padding-right: 62px; }
+  .input-unit.wide input { padding-right: 82px; }
+  .input-unit .suffix {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 12px; font-weight: 700; pointer-events: none;
+  }
+  .inline-check { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-size: 13px; }
+  .inline-check input[type="checkbox"], .inline-check input[type="radio"] { width: 16px; height: 16px; accent-color: var(--primary); }
+  .segmented { display: flex; flex-wrap: wrap; gap: 10px; }
+  .segmented label {
+    display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); cursor: pointer;
+  }
+
+  .btn {
+    background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 12px 18px;
+    font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; }
+  .btn.small { padding: 8px 12px; font-size: 12px; }
+  .btn.export { background: var(--primary); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-start; }
+
+  .fieldset-box {
+    border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px 8px; margin-bottom: 14px;
+  }
+  .fieldset-box legend { font-size: 13px; font-weight: 700; color: var(--primary); padding: 0 6px; }
+
+  .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 14px; }
+  .table { width: 100%; border-collapse: collapse; min-width: 860px; }
+  .table th {
+    background: var(--table-header-bg); color: var(--table-header-text); text-align: left; padding: 11px 12px;
+    font-size: 12px; position: sticky; top: 0; z-index: 2; white-space: nowrap;
+  }
+  .table td { padding: 9px 12px; border-top: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+  .table tbody tr:nth-child(even) { background: var(--table-stripe); }
+  .table input, .table select { min-width: 110px; padding: 8px 10px; border-radius: 10px; }
+  .table .remove-btn { white-space: nowrap; }
+
+  .toggle-card {
+    border: 1px solid var(--border); border-radius: 16px; margin-bottom: 14px; overflow: hidden; background: var(--bg-card);
+  }
+  .toggle-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px;
+    background: var(--surface-soft); border-bottom: 1px solid var(--border);
+  }
+  .toggle-head-left { display: flex; align-items: center; gap: 12px; }
+  .toggle-body { padding: 16px; }
+
+  .kpi {
+    background: var(--surface-soft); border: 1px solid var(--highlight-border); border-radius: 16px; padding: 16px; min-height: 120px;
+  }
+  .kpi .label { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+  .kpi .value { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1.1; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 7px; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; background: var(--surface-strong); color: var(--primary); border: 1px solid var(--highlight-border);
+  }
+  .badge.alt { background: rgba(232,182,48,0.14); color: var(--text); }
+
+  .info-box, .warning-box {
+    border-radius: 14px; padding: 14px 16px; margin: 12px 0; font-size: 13px;
+    border: 1px solid var(--highlight-border); background: var(--surface-soft);
+  }
+  .warning-box { border-color: var(--accent); background: rgba(232,182,48,.12); }
+  .hidden { display: none !important; }
+  .muted { color: var(--text-muted); }
+  .right { text-align: right; }
+  .chart-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; box-shadow: var(--shadow);
+  }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .chart-wrap { height: 320px; }
+  .chart-wrap.tall { height: 360px; }
+  .chart-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
+  .result-wrap { display: none; }
+  .report-meta { display: grid; gap: 10px; }
+  .report-meta-item { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .footer { max-width: 1320px; margin: 26px auto 0; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+  .report-mode .controls-only, .report-mode .theme-bar { display: none !important; }
+  .report-mode .result-wrap { display: block !important; }
+
+  @media (max-width: 1160px) {
+    .grid-2, .grid-3, .grid-4, .kpi-grid, .chart-grid { grid-template-columns: 1fr; }
+    .container { padding: 16px 12px 60px; }
+    .header h1 { font-size: 28px; }
+    .card { padding: 18px 16px 16px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .theme-bar, .report-toggle, .controls-only, .footer, .chart-head button, .actions { display: none !important; }
+    .result-wrap { display: block !important; }
+    .card, .chart-card { box-shadow: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="theme-bar controls-only">
+    <button class="theme-btn active" onclick="setTheme('nordisk')" data-theme-btn="nordisk"><span class="theme-dot" style="background:#1B3A4B"></span>Nordisk Energi</button>
+    <button class="theme-btn" onclick="setTheme('solcell')" data-theme-btn="solcell"><span class="theme-dot" style="background:#2E7D32"></span>Solcell</button>
+    <button class="theme-btn" onclick="setTheme('blueprint')" data-theme-btn="blueprint"><span class="theme-dot" style="background:#0097A7"></span>Blueprint</button>
+    <button class="theme-btn" onclick="setTheme('koppar')" data-theme-btn="koppar"><span class="theme-dot" style="background:#C17F4E"></span>Koppar</button>
+    <button class="theme-btn" onclick="setTheme('lovverk')" data-theme-btn="lovverk"><span class="theme-dot" style="background:#A8C256"></span>Lövverk</button>
+    <button class="theme-btn" onclick="setTheme('kooperativ')" data-theme-btn="kooperativ"><span class="theme-dot" style="background:#E90016"></span>Kooperativ</button>
+    <div class="theme-divider"></div>
+    <button class="theme-btn" onclick="setTheme('midnatt')" data-theme-btn="midnatt"><span class="theme-dot" style="background:#7EB8DA"></span>Midnatt</button>
+    <button class="theme-btn" onclick="setTheme('grafit')" data-theme-btn="grafit"><span class="theme-dot" style="background:#A0D4A0"></span>Grafit</button>
+  </div>
+
+  <header class="header">
+    <h1>▦ Klimatskalskalkyl — Flerbostadshus</h1>
+    <p>Beräkningsverktyg för energibesparing och ekonomi vid åtgärder på fönster, fasad, vindsbjälklag och lufttäthet. Modulen följer samma formspråk och rapportmönster som övriga verktyg i Energikalkyl-sviten.</p>
+    <div class="report-toggle">
+      <button class="btn secondary small" id="reportModeBtn">Rapportläge</button>
+      <button class="btn secondary small controls-only" id="exportPdfBtn">⬇ Exportera PDF</button>
+      <button class="btn secondary small controls-only" id="sampleBtn">Ladda exempel</button>
+      <button class="btn secondary small controls-only" id="resetBtn">Rensa</button>
+    </div>
+  </header>
+
+  <section class="card controls-only">
+    <h2>Förutsättningar och lägesval</h2>
+    <div class="section-line"></div>
+
+    <div class="grid-2">
+      <fieldset class="fieldset-box">
+        <legend>Fastigheten</legend>
+        <div class="grid-3">
+          <div class="field"><label for="propertyName">Fastighetsnamn</label><input id="propertyName" type="text" placeholder="t.ex. Brf Ekbacken"></div>
+          <div class="field"><label for="propertyId">Fastighets-id / slug</label><input id="propertyId" type="text" placeholder="brf-ekbacken"></div>
+          <div class="field"><label for="atemp">Atemp</label><div class="input-unit"><input id="atemp" type="text" value="4200"><span class="suffix">m²</span></div></div>
+          <div class="field"><label for="kommun">Kommun / ortprofil</label>
+            <select id="kommun">
+              <option value="goteborg">Göteborg</option>
+              <option value="stockholm">Stockholm</option>
+              <option value="malmo">Malmö</option>
+              <option value="jonkoping">Jönköping</option>
+              <option value="umea">Umeå</option>
+              <option value="kiruna">Kiruna</option>
+              <option value="manual">Manuell</option>
+            </select>
+          </div>
+          <div class="field"><label for="klimatzon">Klimatzon</label><input id="klimatzon" type="text" value="3"></div>
+          <div class="field"><label for="gradtimmar">Gradtimmar</label><div class="input-unit wide"><input id="gradtimmar" type="text" value="110000"><span class="suffix">°Ch/år</span></div></div>
+          <div class="field"><label for="dvut">DVUT</label><div class="input-unit"><input id="dvut" type="text" value="-12"><span class="suffix">°C</span></div></div>
+          <div class="field"><label for="indoorTemp">Innetemperatur</label><div class="input-unit"><input id="indoorTemp" type="text" value="21"><span class="suffix">°C</span></div></div>
+          <div class="field"><label for="ventType">Ventilationstyp</label>
+            <select id="ventType"><option value="FTX">FTX</option><option value="FT">FT</option><option value="F">F</option><option value="S">S</option></select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset-box">
+        <legend>Energi och ekonomi</legend>
+        <div class="grid-3">
+          <div class="field"><label for="modeSelect">Beräkningsläge</label>
+            <div class="segmented">
+              <label><input type="radio" name="calcMode" value="window" checked> Fönsterbyte</label>
+              <label><input type="radio" name="calcMode" value="full"> Hela klimatskalet</label>
+            </div>
+          </div>
+          <div class="field"><label for="heatingType">Uppvärmningsform</label>
+            <select id="heatingType"><option value="fjarrvarme">Fjärrvärme</option><option value="el">El</option><option value="varmepump">Värmepump</option></select>
+          </div>
+          <div class="field"><label for="currencyMode">Valutaformat</label>
+            <select id="currencyMode"><option value="kr">kr</option><option value="tkr">tkr</option><option value="mkr">Mkr</option></select>
+          </div>
+          <div class="field"><label for="energyPrice">Energipris</label><div class="input-unit"><input id="energyPrice" type="text" value="0,95"><span class="suffix">kr/kWh</span></div></div>
+          <div class="field"><label for="cop">COP / systemverkningsgrad</label><div class="input-unit"><input id="cop" type="text" value="3,0"><span class="suffix">-</span></div></div>
+          <div class="field"><label for="heatUse">Verifieringsvärde värmebehov</label><div class="input-unit wide"><input id="heatUse" type="text" value="350000"><span class="suffix">kWh/år</span></div></div>
+          <div class="field"><label for="discountRate">Kalkylränta</label><div class="input-unit"><input id="discountRate" type="text" value="5,0"><span class="suffix">%</span></div></div>
+          <div class="field"><label for="priceEscalation">Prisutveckling (bas)</label><div class="input-unit"><input id="priceEscalation" type="text" value="2,5"><span class="suffix">%</span></div></div>
+          <div class="field"><label for="co2Factor">CO₂-faktor</label><div class="input-unit"><input id="co2Factor" type="text" value="0,08000"><span class="suffix">kg/kWh</span></div></div>
+        </div>
+        <div class="info-box" id="heatingInfo">Vid värmepump omvandlas värmebesparingen till minskad köpt el genom att dela energibesparingen med COP innan kr- och CO₂-besparing räknas ut.</div>
+      </fieldset>
+    </div>
+  </section>
+
+  <section class="card controls-only" id="windowSection">
+    <h2>Fönster</h2>
+    <div class="section-line"></div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="info-box"><strong>Typiska U-värden:</strong><br>2-glas kopplat: 2,5–3,0<br>3-glas isolerglas: 1,1–1,3<br>Energiglas: 0,8–1,0</div>
+      <div class="fieldset-box" style="margin-bottom:0;">
+        <legend>Komponentparametrar</legend>
+        <div class="grid-2">
+          <div class="field"><label for="windowLife">Livslängd</label><div class="input-unit"><input id="windowLife" type="text" value="30"><span class="suffix">år</span></div></div>
+          <div class="field"><label for="windowMaint">Underhåll</label><div class="input-unit"><input id="windowMaint" type="text" value="0"><span class="suffix">kr/år</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Namn</th><th>Antal</th><th>Area/st</th><th>U bef.</th><th>U nytt</th><th>Invest/st</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="windowBody"></tbody>
+      </table>
+    </div>
+    <div class="actions" style="margin-top:12px;"><button class="btn secondary small" id="addWindowBtn">+ Lägg till fönstergrupp</button></div>
+  </section>
+
+  <section class="card controls-only full-only hidden" id="fullEnvelopeSection">
+    <h2>Övriga klimatskalsdelar</h2>
+    <div class="section-line"></div>
+
+    <div class="toggle-card">
+      <div class="toggle-head">
+        <div class="toggle-head-left"><div class="inline-check"><input id="facadeActive" type="checkbox" checked> Aktivera fasad</div><span class="badge">Tilläggsisolering</span></div>
+        <div class="muted">Sektioner med manuell fönsterarea per fasad</div>
+      </div>
+      <div class="toggle-body">
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="field"><label for="facadeLife">Livslängd</label><div class="input-unit"><input id="facadeLife" type="text" value="40"><span class="suffix">år</span></div></div>
+          <div class="field"><label for="facadeMaint">Underhåll</label><div class="input-unit"><input id="facadeMaint" type="text" value="0"><span class="suffix">kr/år</span></div></div>
+          <div class="info-box"><strong>Not:</strong> Fönsterarea per fasadsektion anges manuellt. Ingen automatisk koppling sker mellan fönster- och fasadtabellerna.</div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Namn</th><th>Bruttoarea</th><th>Fönsterarea</th><th>U bef.</th><th>U nytt</th><th>Invest/m²</th><th></th></tr></thead>
+            <tbody id="facadeBody"></tbody>
+          </table>
+        </div>
+        <div class="actions" style="margin-top:12px;"><button class="btn secondary small" id="addFacadeBtn">+ Lägg till fasadsektion</button></div>
+        <div class="warning-box">Fukttekniska konsekvenser av tilläggsisolering måste bedömas separat. Modulen flaggar detta men beräknar det inte.</div>
+      </div>
+    </div>
+
+    <div class="toggle-card">
+      <div class="toggle-head">
+        <div class="toggle-head-left"><div class="inline-check"><input id="windActive" type="checkbox" checked> Aktivera vindsbjälklag</div><span class="badge">Övre klimatskal</span></div>
+        <div class="muted">Enkla indata för area och U-värde</div>
+      </div>
+      <div class="toggle-body">
+        <div class="grid-3">
+          <div class="field"><label for="windArea">Area</label><div class="input-unit"><input id="windArea" type="text" value="900"><span class="suffix">m²</span></div></div>
+          <div class="field"><label for="windUOld">U befintligt</label><div class="input-unit"><input id="windUOld" type="text" value="0,40"><span class="suffix">W/m²K</span></div></div>
+          <div class="field"><label for="windUNew">U nytt</label><div class="input-unit"><input id="windUNew" type="text" value="0,10"><span class="suffix">W/m²K</span></div></div>
+          <div class="field"><label for="windInvest">Investering</label><div class="input-unit"><input id="windInvest" type="text" value="280000"><span class="suffix">kr</span></div></div>
+          <div class="field"><label for="windLife">Livslängd</label><div class="input-unit"><input id="windLife" type="text" value="40"><span class="suffix">år</span></div></div>
+          <div class="field"><label for="windMaint">Underhåll</label><div class="input-unit"><input id="windMaint" type="text" value="0"><span class="suffix">kr/år</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggle-card">
+      <div class="toggle-head">
+        <div class="toggle-head-left"><div class="inline-check"><input id="airActive" type="checkbox" checked> Aktivera tätning</div><span class="badge alt">Luftläckage</span></div>
+        <div class="muted">Förenklad modell med korrektionsfaktor för ventilationstyp</div>
+      </div>
+      <div class="toggle-body">
+        <div class="grid-3">
+          <div class="field"><label for="airArea">Omslutande area</label><div class="input-unit"><input id="airArea" type="text" value="2600"><span class="suffix">m²</span></div></div>
+          <div class="field"><label for="airBefore">Luftomsättning före (q50)</label><div class="input-unit"><input id="airBefore" type="text" value="0,80"><span class="suffix">l/sm²</span></div></div>
+          <div class="field"><label for="airAfter">Luftomsättning efter (q50)</label><div class="input-unit"><input id="airAfter" type="text" value="0,45"><span class="suffix">l/sm²</span></div></div>
+          <div class="field"><label for="airInvest">Investering</label><div class="input-unit"><input id="airInvest" type="text" value="180000"><span class="suffix">kr</span></div></div>
+          <div class="field"><label for="airLife">Livslängd</label><div class="input-unit"><input id="airLife" type="text" value="15"><span class="suffix">år</span></div></div>
+          <div class="field"><label for="airMaint">Underhåll</label><div class="input-unit"><input id="airMaint" type="text" value="0"><span class="suffix">kr/år</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card controls-only">
+    <h2>Åtgärder och export</h2>
+    <div class="section-line"></div>
+    <div class="actions" style="margin-bottom:12px;">
+      <button class="btn" id="calcBtn">Beräkna</button>
+      <button class="btn secondary" id="copyJsonBtn">Kopiera åtgärds-JSON</button>
+      <button class="btn secondary" id="copyReportBtn">Kopiera resultattext</button>
+    </div>
+    <textarea id="exportJson" readonly placeholder="Här visas exportdata för åtgärdsportföljen när du har räknat."></textarea>
+  </section>
+
+  <section class="card result-wrap" id="resultSection">
+    <h2>Resultatöversikt</h2>
+    <div class="section-line"></div>
+    <div class="info-box hidden" id="synergyBox">Observera: Energibesparingen för kombinerade åtgärder kan vara lägre än summan av de enskilda. Denna kalkyl summerar besparingarna linjärt — en mer exakt analys kräver energisimuleringsverktyg.</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+  </section>
+
+  <section class="card result-wrap" id="tableSection">
+    <h2>Komponentsammanställning</h2>
+    <div class="section-line"></div>
+    <div class="table-wrap">
+      <table class="table" id="resultTable">
+        <thead>
+          <tr>
+            <th>Komponent</th><th>Area</th><th>ΔU / Δq</th><th>Energi</th><th>Besparing</th><th>Investering</th><th>Payoff</th><th>NPV</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+        <tfoot id="resultFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="card result-wrap" id="reportSection">
+    <h2>Rapportdata</h2>
+    <div class="section-line"></div>
+    <div class="report-meta" id="reportMeta"></div>
+    <div class="warning-box" id="validationBox">Verktyget är ett förprojekteringsstöd. Köldbryggor, solinstrålning genom fönster, ventilationsdrift och fuktteknik hanteras inte explicit.</div>
+  </section>
+
+  <section class="card result-wrap wide-card" id="chartSection">
+    <h2>Diagram</h2>
+    <div class="section-line"></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-head"><h3>Besparing per komponent</h3><button class="btn small export" onclick="exportCanvas('savingChart','klimatskalskalkyl_besparing.png')">⬇</button></div>
+        <div class="chart-wrap"><canvas id="savingChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h3>Investering per komponent</h3><button class="btn small export" onclick="exportCanvas('investChart','klimatskalskalkyl_investering.png')">⬇</button></div>
+        <div class="chart-wrap"><canvas id="investChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h3>Kumulativ besparing 30 år</h3><button class="btn small export" onclick="exportCanvas('cumChart','klimatskalskalkyl_kumulativ.png')">⬇</button></div>
+        <div class="chart-wrap"><canvas id="cumChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h3>Känslighetsanalys NPV</h3><button class="btn small export" onclick="exportCanvas('npvScenarioChart','klimatskalskalkyl_npv_scenarier.png')">⬇</button></div>
+        <div class="chart-wrap"><canvas id="npvScenarioChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">Klimatskalskalkyl v1.0 — HTML-prototyp för Energikalkyl-sviten.</div>
+</div>
+
+<script>
+const MUNICIPAL_PROFILES = {
+  goteborg: { name: 'Göteborg', zone: 3, degreeHours: 110000, dvut: -12 },
+  stockholm: { name: 'Stockholm', zone: 3, degreeHours: 118000, dvut: -14 },
+  malmo: { name: 'Malmö', zone: 4, degreeHours: 98000, dvut: -10 },
+  jonkoping: { name: 'Jönköping', zone: 3, degreeHours: 122000, dvut: -16 },
+  umea: { name: 'Umeå', zone: 2, degreeHours: 156000, dvut: -23 },
+  kiruna: { name: 'Kiruna', zone: 1, degreeHours: 198000, dvut: -31 },
+  manual: null
+};
+const ESC_VALS = { low: 1.5, base: 2.5, high: 4.5 };
+const INFILTRATION_FACTORS = { FTX: 0.05, FT: 0.07, F: 0.10, S: 0.12 };
+const charts = {};
+let lastResult = null;
+
+const $ = (id) => document.getElementById(id);
+function pN(v){ if(typeof v === 'number') return v; let s = String(v || '').trim(); if(!s) return NaN; s = s.replace(/\s|\u00a0/g,'').replace(',', '.').replace(/[^0-9.\-]/g,''); const n = Number(s); return Number.isFinite(n) ? n : NaN; }
+function fmt0(n){ return new Intl.NumberFormat('sv-SE',{maximumFractionDigits:0}).format(Number(n)||0); }
+function fmt1(n){ return new Intl.NumberFormat('sv-SE',{minimumFractionDigits:1,maximumFractionDigits:1}).format(Number(n)||0); }
+function fmt2(n){ return new Intl.NumberFormat('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n)||0); }
+function fmt5(n){ return new Intl.NumberFormat('sv-SE',{minimumFractionDigits:5,maximumFractionDigits:5}).format(Number(n)||0); }
+function fmtCur(n){ const v = Number(n)||0, mode = $('currencyMode').value; if(mode === 'tkr') return fmt1(v/1e3) + ' tkr'; if(mode === 'mkr') return fmt2(v/1e6) + ' Mkr'; return fmt0(v) + ' kr'; }
+function fmtKwh(n){ return fmt0(n) + ' kWh/år'; }
+function fmtPct(n){ return fmt1(n) + ' %'; }
+function fmtKg(n){ return fmt0(n) + ' kg CO₂e/år'; }
+function setInput(id, value, decimals=0){ const el=$(id); if(!el) return; el.value = decimals === 0 ? fmt0(value) : new Intl.NumberFormat('sv-SE',{minimumFractionDigits:decimals, maximumFractionDigits:decimals}).format(value); }
+function dv(amount, year, rate){ return amount / Math.pow(1 + rate, year); }
+function themeColors(){ const s=getComputedStyle(document.documentElement); return { primary:s.getPropertyValue('--primary').trim(), accent:s.getPropertyValue('--accent').trim(), border:s.getPropertyValue('--border').trim(), text:s.getPropertyValue('--text').trim(), muted:s.getPropertyValue('--text-muted').trim(), highlight:s.getPropertyValue('--highlight-border').trim() }; }
+function chartOpts(colors, currency=false){ return { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color: colors.text } } }, scales:{ x:{ ticks:{ color: colors.text }, grid:{ display:false } }, y:{ ticks:{ color: colors.muted, callback:v => currency ? fmt0(v) : fmt0(v) }, grid:{ color: colors.border } } } }; }
+
+function setTheme(name){
+  const map = { nordisk:'', solcell:'solcell', blueprint:'blueprint', koppar:'koppar', lovverk:'lovverk', kooperativ:'kooperativ', midnatt:'midnatt', grafit:'grafit' };
+  document.documentElement.setAttribute('data-theme', map[name] || '');
+  document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.themeBtn === name));
+  if(lastResult) renderAll(lastResult);
+}
+
+function ensureLib(url, check){ if(check()) return Promise.resolve(); return new Promise((res, rej) => { const s = document.createElement('script'); s.src = url; s.onload = res; s.onerror = () => rej(new Error('Laddningsfel')); document.head.appendChild(s); }); }
+function exportCanvas(canvasId, filename){ const canvas=$(canvasId); if(!canvas) return; const link=document.createElement('a'); link.download=filename; link.href=canvas.toDataURL('image/png'); link.click(); }
+async function exportNodeAsPng(node, filename){ try{ await ensureLib('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',()=>window.html2canvas); const canvas=await window.html2canvas(node,{backgroundColor:'#fff',scale:Math.max(2,window.devicePixelRatio||1),useCORS:true,logging:false,windowWidth:1400}); const link=document.createElement('a'); link.download=filename; link.href=canvas.toDataURL('image/png'); link.click(); }catch(err){ console.error(err); alert('PNG-export misslyckades.'); } }
+async function exportPdf(){
+  try {
+    await ensureLib('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',()=>window.html2canvas);
+    await ensureLib('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',()=>window.jspdf);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pw=210, mg=10, cw=pw-2*mg;
+    async function snap(el){ return window.html2canvas(el,{backgroundColor:'#fff',scale:2,useCORS:true,logging:false,windowWidth:1400}); }
+    async function addImg(canvas,y){ const ih=(canvas.height/canvas.width)*cw; const h=Math.min(ih,277); pdf.addImage(canvas.toDataURL('image/png'),'PNG',mg,y,cw,h); return y+h+4; }
+    pdf.setFontSize(16); pdf.text('Klimatskalskalkyl — Flerbostadshus', pw/2, mg+6, { align:'center' });
+    let y=mg+14; y=await addImg(await snap($('kpiGrid')), y); await addImg(await snap($('reportMeta')), y);
+    pdf.addPage(); await addImg(await snap($('resultTable').closest('.table-wrap')), mg);
+    pdf.addPage(); await addImg(await snap($('chartSection')), mg);
+    pdf.save('klimatskalskalkyl_rapport.pdf');
+  } catch(err) { console.error(err); alert('PDF-export misslyckades: ' + err.message); }
+}
+
+function componentCashflow(item, escPct){
+  const dr=(pN($('discountRate').value)||0)/100;
+  const esc=(escPct||0)/100;
+  const life=Math.max(0, Math.round(item.life||0));
+  const invest=Number(item.invest)||0, saving=Number(item.saving)||0, maintenance=Number(item.maintenance)||0;
+  let npv=-invest, lcc=invest; const annual=[-invest], cum=[-invest]; let cumulative=-invest;
+  for(let year=1; year<=life; year++){
+    const escalatedSaving=saving*Math.pow(1+esc, year-1);
+    const flow=escalatedSaving-maintenance;
+    annual.push(flow);
+    cumulative+=flow;
+    cum.push(cumulative);
+    npv+=dv(flow, year, dr);
+    lcc+=dv(maintenance, year, dr)-dv(escalatedSaving, year, dr);
+  }
+  return { npv, lcc, annual, cum };
+}
+function calcIrr(cashflows){
+  let low=-0.95, high=1.5;
+  function npv(rate){ return cashflows.reduce((s,cf,i)=>s + cf/Math.pow(1+rate, i), 0); }
+  let nLow=npv(low), nHigh=npv(high);
+  if(!Number.isFinite(nLow) || !Number.isFinite(nHigh) || nLow*nHigh>0) return 0;
+  for(let i=0;i<80;i++){
+    const mid=(low+high)/2, nMid=npv(mid);
+    if(Math.abs(nMid)<1e-7) return mid*100;
+    if(nLow*nMid<=0){ high=mid; nHigh=nMid; } else { low=mid; nLow=nMid; }
+  }
+  return ((low+high)/2)*100;
+}
+function rowTemplate(type, data={}){
+  if(type === 'window') return `<tr>
+    <td><input data-field="name" type="text" value="${data.name||''}" placeholder="t.ex. 2-glas kopplat"></td>
+    <td><input data-field="count" type="text" value="${data.count||''}" placeholder="0"></td>
+    <td><input data-field="area" type="text" value="${data.area||''}" placeholder="1,8"></td>
+    <td><input data-field="uOld" type="text" value="${data.uOld||''}" placeholder="2,7"></td>
+    <td><input data-field="uNew" type="text" value="${data.uNew||''}" placeholder="1,0"></td>
+    <td><input data-field="invest" type="text" value="${data.invest||''}" placeholder="12000"></td>
+    <td><button class="btn secondary small remove-btn" type="button">Ta bort</button></td>
+  </tr>`;
+  return `<tr>
+    <td><input data-field="name" type="text" value="${data.name||''}" placeholder="t.ex. Norr"></td>
+    <td><input data-field="area" type="text" value="${data.area||''}" placeholder="350"></td>
+    <td><input data-field="windowArea" type="text" value="${data.windowArea||''}" placeholder="60"></td>
+    <td><input data-field="uOld" type="text" value="${data.uOld||''}" placeholder="0,55"></td>
+    <td><input data-field="uNew" type="text" value="${data.uNew||''}" placeholder="0,20"></td>
+    <td><input data-field="invest" type="text" value="${data.invest||''}" placeholder="1600"></td>
+    <td><button class="btn secondary small remove-btn" type="button">Ta bort</button></td>
+  </tr>`;
+}
+function addRow(type, data={}){ const body = type === 'window' ? $('windowBody') : $('facadeBody'); body.insertAdjacentHTML('beforeend', rowTemplate(type, data)); }
+function attachRowRemoval(){ document.querySelectorAll('.remove-btn').forEach(btn => { btn.onclick = () => { const tr=btn.closest('tr'); const body=tr.parentElement; if(body.children.length>1) tr.remove(); else tr.querySelectorAll('input').forEach(i=>i.value=''); }; }); }
+
+function updateMunicipality(){
+  const key = $('kommun').value;
+  const profile = MUNICIPAL_PROFILES[key];
+  const manual = key === 'manual';
+  ['klimatzon','gradtimmar','dvut'].forEach(id => $(id).disabled = !manual);
+  if(profile){ $('klimatzon').value=profile.zone; setInput('gradtimmar', profile.degreeHours, 0); $('dvut').value=profile.dvut; }
+}
+function updateMode(){
+  const full = document.querySelector('input[name="calcMode"]:checked').value === 'full';
+  document.querySelectorAll('.full-only').forEach(el => el.classList.toggle('hidden', !full));
+  $('synergyBox').classList.toggle('hidden', !full);
+}
+function updateHeating(){
+  const type = $('heatingType').value;
+  $('cop').closest('.field').classList.toggle('hidden', type !== 'varmepump');
+  const defaults = { fjarrvarme: { price: 0.95, co2: 0.08 }, el: { price: 1.60, co2: 0.46479 }, varmepump: { price: 1.60, co2: 0.46479 } };
+  const d = defaults[type];
+  if($('energyPrice').dataset.touched !== '1') $('energyPrice').value = fmt2(d.price);
+  if($('co2Factor').dataset.touched !== '1') $('co2Factor').value = fmt5(d.co2);
+  $('heatingInfo').textContent = type === 'varmepump'
+    ? 'Vid värmepump omvandlas värmebesparingen till minskad köpt el genom att dela energibesparingen med COP innan kr- och CO₂-besparing räknas ut.'
+    : 'Vid fjärrvärme eller direktel multipliceras värmebesparingen direkt med energipris och CO₂-faktor.';
+}
+function touched(id){ $(id).dataset.touched='1'; }
+
+function readWindowGroups(){
+  return [...$('windowBody').querySelectorAll('tr')].map(tr => ({
+    name: tr.querySelector('[data-field="name"]').value.trim(),
+    count: pN(tr.querySelector('[data-field="count"]').value) || 0,
+    area: pN(tr.querySelector('[data-field="area"]').value) || 0,
+    uOld: pN(tr.querySelector('[data-field="uOld"]').value) || 0,
+    uNew: pN(tr.querySelector('[data-field="uNew"]').value) || 0,
+    investPerUnit: pN(tr.querySelector('[data-field="invest"]').value) || 0
+  })).filter(r => r.name || r.count || r.area || r.uOld || r.uNew || r.investPerUnit);
+}
+function readFacadeRows(){
+  return [...$('facadeBody').querySelectorAll('tr')].map(tr => ({
+    name: tr.querySelector('[data-field="name"]').value.trim(),
+    area: pN(tr.querySelector('[data-field="area"]').value) || 0,
+    windowArea: pN(tr.querySelector('[data-field="windowArea"]').value) || 0,
+    uOld: pN(tr.querySelector('[data-field="uOld"]').value) || 0,
+    uNew: pN(tr.querySelector('[data-field="uNew"]').value) || 0,
+    investPerM2: pN(tr.querySelector('[data-field="invest"]').value) || 0
+  })).filter(r => r.name || r.area || r.windowArea || r.uOld || r.uNew || r.investPerM2);
+}
+
+function calculate(){
+  const mode = document.querySelector('input[name="calcMode"]:checked').value;
+  const degreeHours = pN($('gradtimmar').value) || 0;
+  const energyPrice = pN($('energyPrice').value) || 0;
+  const co2Factor = pN($('co2Factor').value) || 0;
+  const heatUse = pN($('heatUse').value) || 0;
+  const heatingType = $('heatingType').value;
+  const cop = Math.max(0.1, pN($('cop').value) || 3);
+  const components = [];
+
+  const windowGroups = readWindowGroups();
+  if(windowGroups.length){
+    const area = windowGroups.reduce((s,g)=>s+g.count*g.area,0);
+    const deltaUArea = windowGroups.reduce((s,g)=>s+g.count*g.area*Math.max(0,g.uOld-g.uNew),0);
+    const energy = deltaUArea*degreeHours/1000;
+    const purchasedEnergy = heatingType === 'varmepump' ? energy / cop : energy;
+    const saving = purchasedEnergy * energyPrice;
+    const invest = windowGroups.reduce((s,g)=>s+g.count*g.investPerUnit,0);
+    const maintenance = pN($('windowMaint').value)||0;
+    const life = Math.max(1, pN($('windowLife').value)||30);
+    const cf = componentCashflow({invest,saving,maintenance,life}, ESC_VALS.base);
+    const irr = calcIrr(cf.annual);
+    components.push({
+      key:'window', name:'Fönsterbyte', area, delta: area>0 ? deltaUArea/area : 0, deltaLabel: area>0 ? fmt2(deltaUArea/area)+' W/m²K' : '—', energy, purchasedEnergy, saving, invest, maintenance, life, npv:cf.npv, lcc:cf.lcc, irr, payback:saving>0?invest/saving:0, annual:cf.annual, cum:cf.cum,
+      npvLow:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.low).npv,
+      npvBase:cf.npv,
+      npvHigh:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.high).npv,
+      co2:purchasedEnergy*co2Factor,
+      exportName: windowGroups.length === 1 && windowGroups[0].name ? 'Fönsterbyte — ' + windowGroups[0].name : 'Fönsterbyte — samlad åtgärd'
+    });
+  }
+
+  if(mode === 'full'){
+    if($('facadeActive').checked){
+      const rows = readFacadeRows();
+      if(rows.length){
+        const netArea = rows.reduce((s,r)=>s+Math.max(0,r.area-r.windowArea),0);
+        const deltaUArea = rows.reduce((s,r)=>s+Math.max(0,r.area-r.windowArea)*Math.max(0,r.uOld-r.uNew),0);
+        const energy = deltaUArea*degreeHours/1000;
+        const purchasedEnergy = heatingType === 'varmepump' ? energy / cop : energy;
+        const saving = purchasedEnergy * energyPrice;
+        const invest = rows.reduce((s,r)=>s+r.area*r.investPerM2,0);
+        const maintenance = pN($('facadeMaint').value)||0;
+        const life = Math.max(1, pN($('facadeLife').value)||40);
+        const cf = componentCashflow({invest,saving,maintenance,life}, ESC_VALS.base);
+        const irr = calcIrr(cf.annual);
+        components.push({
+          key:'facade', name:'Tilläggsisolering fasad', area:netArea, delta: netArea>0 ? deltaUArea/netArea : 0, deltaLabel: netArea>0 ? fmt2(deltaUArea/netArea)+' W/m²K' : '—', energy, purchasedEnergy, saving, invest, maintenance, life, npv:cf.npv, lcc:cf.lcc, irr, payback:saving>0?invest/saving:0, annual:cf.annual, cum:cf.cum,
+          npvLow:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.low).npv,
+          npvBase:cf.npv,
+          npvHigh:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.high).npv,
+          co2:purchasedEnergy*co2Factor,
+          exportName:'Tilläggsisolering fasad'
+        });
+      }
+    }
+    if($('windActive').checked){
+      const area = pN($('windArea').value)||0;
+      const delta = Math.max(0,(pN($('windUOld').value)||0)-(pN($('windUNew').value)||0));
+      const energy = area*delta*degreeHours/1000;
+      const purchasedEnergy = heatingType === 'varmepump' ? energy / cop : energy;
+      const saving = purchasedEnergy * energyPrice;
+      const invest = pN($('windInvest').value)||0;
+      const maintenance = pN($('windMaint').value)||0;
+      const life = Math.max(1, pN($('windLife').value)||40);
+      const cf = componentCashflow({invest,saving,maintenance,life}, ESC_VALS.base);
+      const irr = calcIrr(cf.annual);
+      components.push({
+        key:'wind', name:'Tilläggsisolering vindsbjälklag', area, delta, deltaLabel: fmt2(delta)+' W/m²K', energy, purchasedEnergy, saving, invest, maintenance, life, npv:cf.npv, lcc:cf.lcc, irr, payback:saving>0?invest/saving:0, annual:cf.annual, cum:cf.cum,
+        npvLow:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.low).npv,
+        npvBase:cf.npv,
+        npvHigh:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.high).npv,
+        co2:purchasedEnergy*co2Factor,
+        exportName:'Tilläggsisolering vindsbjälklag'
+      });
+    }
+    if($('airActive').checked){
+      const envelopeArea = pN($('airArea').value)||0;
+      const qBefore = pN($('airBefore').value)||0;
+      const qAfter = pN($('airAfter').value)||0;
+      const factor = INFILTRATION_FACTORS[$('ventType').value] || 0.08;
+      const delta = Math.max(0, qBefore-qAfter);
+      const energy = 0.33*delta*factor*envelopeArea*degreeHours/1000;
+      const purchasedEnergy = heatingType === 'varmepump' ? energy / cop : energy;
+      const saving = purchasedEnergy * energyPrice;
+      const invest = pN($('airInvest').value)||0;
+      const maintenance = pN($('airMaint').value)||0;
+      const life = Math.max(1, pN($('airLife').value)||15);
+      const cf = componentCashflow({invest,saving,maintenance,life}, ESC_VALS.base);
+      const irr = calcIrr(cf.annual);
+      components.push({
+        key:'air', name:'Tätning / luftläckage', area:envelopeArea, delta, deltaLabel: fmt2(delta)+' l/sm² (q50)', energy, purchasedEnergy, saving, invest, maintenance, life, npv:cf.npv, lcc:cf.lcc, irr, payback:saving>0?invest/saving:0, annual:cf.annual, cum:cf.cum,
+        npvLow:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.low).npv,
+        npvBase:cf.npv,
+        npvHigh:componentCashflow({invest,saving,maintenance,life}, ESC_VALS.high).npv,
+        co2:purchasedEnergy*co2Factor,
+        exportName:'Tätning klimatskal'
+      });
+    }
+  }
+
+  if(!components.length){ alert('Lägg in minst en aktiv åtgärd innan du beräknar.'); return; }
+
+  const total = {
+    invest: components.reduce((s,x)=>s+x.invest,0),
+    energy: components.reduce((s,x)=>s+x.energy,0),
+    purchasedEnergy: components.reduce((s,x)=>s+x.purchasedEnergy,0),
+    saving: components.reduce((s,x)=>s+x.saving,0),
+    npv: components.reduce((s,x)=>s+x.npv,0),
+    co2: components.reduce((s,x)=>s+x.co2,0),
+    area: components.reduce((s,x)=>s+x.area,0),
+    npvLow: components.reduce((s,x)=>s+x.npvLow,0),
+    npvBase: components.reduce((s,x)=>s+x.npvBase,0),
+    npvHigh: components.reduce((s,x)=>s+x.npvHigh,0),
+    life: Math.max(...components.map(x=>x.life), 30)
+  };
+  total.payback = total.saving>0 ? total.invest/total.saving : 0;
+
+  const annual=[]; const cumulative=[]; let running = -total.invest;
+  annual.push(-total.invest); cumulative.push(running);
+  for(let y=1;y<=30;y++){
+    const esc=(pN($('priceEscalation').value)||2.5)/100;
+    const flow=components.reduce((s,c)=>{
+      const base = y<=c.life ? c.saving*Math.pow(1+esc, y-1)-c.maintenance : 0;
+      return s + base;
+    },0);
+    annual.push(flow); running += flow; cumulative.push(running);
+  }
+
+  const fastighet = {
+    id: $('propertyId').value.trim(),
+    namn: $('propertyName').value.trim(),
+    atemp: pN($('atemp').value)||0,
+    kommun: MUNICIPAL_PROFILES[$('kommun').value]?.name || $('kommun').value,
+    klimatzon: pN($('klimatzon').value)||0
+  };
+
+  const exportRows = components.map(c => ({
+    source:'klimatskalskalkyl', version:'1.0', name:c.exportName, category:'Klimatskal',
+    invest:round2(c.invest), energy:round2(c.energy), saving:round2(c.saving), payback:round2(c.payback),
+    life:round2(c.life), irr:round2(c.irr), maintenance:round2(c.maintenance), reinvestYear:0, reinvestCost:0
+  }));
+
+  lastResult = { mode, fastighet, components, total, annual, cumulative, exportRows, heatUse, warnings:[] };
+  if(total.energy > heatUse && heatUse > 0) lastResult.warnings.push('Beräknad energibesparing överstiger angivet verifieringsvärde för värmebehov. Kontrollera indata.');
+  if(mode === 'full' && components.length > 1) lastResult.warnings.push('Kombinerade åtgärder summeras linjärt. Verklig samverkan kan ge lägre total besparing.');
+  renderAll(lastResult);
+}
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+
+function renderKpis(result){
+  $('kpiGrid').innerHTML = `
+    <div class="kpi"><div class="label">Årlig energibesparing</div><div class="value">${fmtKwh(result.total.energy)}</div><div class="sub">Beräknad minskning av värmebehov</div></div>
+    <div class="kpi"><div class="label">Årlig kostnadsbesparing</div><div class="value">${fmtCur(result.total.saving)}</div><div class="sub">År 1 före diskontering</div></div>
+    <div class="kpi"><div class="label">Samlad payoff</div><div class="value">${result.total.payback>0?fmt1(result.total.payback):'—'} år</div><div class="sub">Total investering / årlig besparing</div></div>
+    <div class="kpi"><div class="label">Totalt NPV</div><div class="value">${fmtCur(result.total.npv)}</div><div class="sub">Summerat per aktiv komponent</div></div>
+    <div class="kpi"><div class="label">CO₂-reduktion</div><div class="value">${fmtKg(result.total.co2)}</div><div class="sub">Baserat på vald CO₂-faktor</div></div>
+    <div class="kpi"><div class="label">Total investering</div><div class="value">${fmtCur(result.total.invest)}</div><div class="sub">Alla aktiva komponenter</div></div>
+    <div class="kpi"><div class="label">Verifieringsgrad</div><div class="value">${result.heatUse>0?fmtPct(result.total.energy/result.heatUse*100):'—'}</div><div class="sub">Andel av angivet värmebehov</div></div>
+    <div class="kpi"><div class="label">Aktiva komponenter</div><div class="value">${result.components.length}</div><div class="sub">Lägesval: ${result.mode==='window'?'Fönsterbyte':'Hela klimatskalet'}</div></div>`;
+}
+function renderTable(result){
+  $('resultBody').innerHTML = result.components.map(c => `
+    <tr>
+      <td>${c.name}</td>
+      <td>${fmt0(c.area)} m²</td>
+      <td>${c.deltaLabel}</td>
+      <td>${fmtKwh(c.energy)}</td>
+      <td>${fmtCur(c.saving)}</td>
+      <td>${fmtCur(c.invest)}</td>
+      <td>${c.payback>0?fmt1(c.payback)+' år':'—'}</td>
+      <td>${fmtCur(c.npv)}</td>
+    </tr>`).join('');
+  $('resultFoot').innerHTML = `<tr>
+    <td><strong>Totalt</strong></td><td>${fmt0(result.total.area)} m²</td><td>—</td><td>${fmtKwh(result.total.energy)}</td><td>${fmtCur(result.total.saving)}</td><td>${fmtCur(result.total.invest)}</td><td>${result.total.payback>0?fmt1(result.total.payback)+' år':'—'}</td><td>${fmtCur(result.total.npv)}</td>
+  </tr>`;
+}
+function renderReport(result){
+  $('reportMeta').innerHTML = `
+    <div class="report-meta-item"><strong>Fastighet</strong><span>${result.fastighet.namn || 'Ej angivet'}</span></div>
+    <div class="report-meta-item"><strong>Fastighets-id</strong><span>${result.fastighet.id || 'Ej angivet'}</span></div>
+    <div class="report-meta-item"><strong>Kommun</strong><span>${result.fastighet.kommun}</span></div>
+    <div class="report-meta-item"><strong>Atemp</strong><span>${fmt0(result.fastighet.atemp)} m²</span></div>
+    <div class="report-meta-item"><strong>Klimatzon / gradtimmar</strong><span>${fmt0(result.fastighet.klimatzon)} / ${fmt0(pN($('gradtimmar').value)||0)} °Ch/år</span></div>
+    <div class="report-meta-item"><strong>Uppvärmning</strong><span>${$('heatingType').selectedOptions[0].text}</span></div>
+    <div class="report-meta-item"><strong>Energipris</strong><span>${fmt2(pN($('energyPrice').value)||0)} kr/kWh</span></div>
+    <div class="report-meta-item"><strong>Kalkylränta / prisutveckling</strong><span>${fmt1(pN($('discountRate').value)||0)} % / ${fmt1(pN($('priceEscalation').value)||0)} %</span></div>
+    <div class="report-meta-item"><strong>Ventilation</strong><span>${$('ventType').value}</span></div>
+    <div class="report-meta-item"><strong>Kommentar</strong><span>${result.warnings.length ? result.warnings.join(' ') : 'Inga särskilda varningar.'}</span></div>`;
+  $('validationBox').innerHTML = 'Verktyget är ett förprojekteringsstöd. Köldbryggor, solinstrålning genom fönster, ventilationsdrift och fuktteknik hanteras inte explicit.' + (result.warnings.length ? '<br><br><strong>Kontrollpunkter:</strong> ' + result.warnings.join(' ') : '');
+}
+function destroyCharts(){ Object.values(charts).forEach(ch => ch && ch.destroy()); Object.keys(charts).forEach(k => delete charts[k]); }
+function buildCharts(result){
+  destroyCharts();
+  const c=themeColors();
+  const labels=result.components.map(x=>x.name);
+  charts.saving=new Chart($('savingChart').getContext('2d'), { type:'bar', data:{ labels, datasets:[{ label:'Årlig besparing', data:result.components.map(x=>x.saving), backgroundColor:c.accent, borderRadius:8 }] }, options: chartOpts(c, true) });
+  charts.invest=new Chart($('investChart').getContext('2d'), { type:'bar', data:{ labels, datasets:[{ label:'Investering', data:result.components.map(x=>x.invest), backgroundColor:c.primary, borderRadius:8 }] }, options: chartOpts(c, true) });
+  charts.cum=new Chart($('cumChart').getContext('2d'), { type:'line', data:{ labels:result.cumulative.map((_,i)=>'År '+i), datasets:[{ label:'Kumulativt kassaflöde', data:result.cumulative, borderColor:c.primary, backgroundColor:c.accent, tension:.2, pointRadius:2 }] }, options: chartOpts(c, true) });
+  charts.npv=new Chart($('npvScenarioChart').getContext('2d'), { type:'bar', data:{ labels:['Låg','Bas','Hög'], datasets:[{ label:'NPV', data:[result.total.npvLow,result.total.npvBase,result.total.npvHigh], backgroundColor:[c.accent,c.primary,c.highlight], borderRadius:8 }] }, options: chartOpts(c, true) });
+}
+function renderExport(result){ $('exportJson').value = JSON.stringify(result.exportRows, null, 2); }
+function renderAll(result){ $('resultSection').style.display='block'; $('tableSection').style.display='block'; $('reportSection').style.display='block'; $('chartSection').style.display='block'; renderKpis(result); renderTable(result); renderReport(result); renderExport(result); buildCharts(result); $('synergyBox').classList.toggle('hidden', !(result.mode==='full' && result.components.length>1)); }
+
+function copyText(text){ navigator.clipboard.writeText(text).then(()=>alert('Kopierat till urklipp.')).catch(()=>alert('Kunde inte kopiera.')); }
+function buildSummaryText(){ if(!lastResult) return ''; return `Klimatskalskalkyl\nFastighet: ${lastResult.fastighet.namn || 'Ej angivet'}\nÅrlig energibesparing: ${fmtKwh(lastResult.total.energy)}\nÅrlig kostnadsbesparing: ${fmtCur(lastResult.total.saving)}\nTotal investering: ${fmtCur(lastResult.total.invest)}\nPayoff: ${lastResult.total.payback>0?fmt1(lastResult.total.payback)+' år':'—'}\nNPV: ${fmtCur(lastResult.total.npv)}\nCO₂-reduktion: ${fmtKg(lastResult.total.co2)}\nAktiva komponenter: ${lastResult.components.map(x=>x.name).join(', ')}`; }
+function resetForm(){
+  $('propertyName').value=''; $('propertyId').value=''; $('atemp').value='4200'; $('kommun').value='goteborg'; updateMunicipality();
+  $('indoorTemp').value='21'; $('ventType').value='FTX'; $('heatingType').value='fjarrvarme'; $('currencyMode').value='kr'; $('energyPrice').dataset.touched=''; $('co2Factor').dataset.touched=''; updateHeating();
+  $('cop').value='3,0'; $('heatUse').value='350000'; $('discountRate').value='5,0'; $('priceEscalation').value='2,5'; document.querySelector('input[name="calcMode"][value="window"]').checked=true; updateMode();
+  $('windowLife').value='30'; $('windowMaint').value='0'; $('facadeLife').value='40'; $('facadeMaint').value='0'; $('windLife').value='40'; $('windMaint').value='0'; $('airLife').value='15'; $('airMaint').value='0';
+  $('windowBody').innerHTML=''; $('facadeBody').innerHTML=''; addRow('window'); addRow('window'); addRow('facade'); attachRowRemoval();
+  $('facadeActive').checked=true; $('windActive').checked=true; $('airActive').checked=true;
+  $('windArea').value=''; $('windUOld').value=''; $('windUNew').value=''; $('windInvest').value=''; $('airArea').value=''; $('airBefore').value=''; $('airAfter').value=''; $('airInvest').value='';
+  $('exportJson').value=''; ['resultSection','tableSection','reportSection','chartSection'].forEach(id=>$(id).style.display='none'); destroyCharts(); lastResult=null;
+}
+function loadSample(){
+  resetForm(); document.querySelector('input[name="calcMode"][value="full"]').checked=true; updateMode();
+  $('propertyName').value='Brf Exempelhuset'; $('propertyId').value='brf-exempelhuset'; $('atemp').value='4800'; $('kommun').value='goteborg'; updateMunicipality(); $('heatingType').value='fjarrvarme'; updateHeating(); $('heatUse').value='410000';
+  $('windowBody').innerHTML=''; addRow('window',{name:'2-glas kopplat, vardagsrum',count:'82',area:'1,8',uOld:'2,7',uNew:'1,0',invest:'12500'}); addRow('window',{name:'Trapphusfönster',count:'18',area:'1,1',uOld:'2,4',uNew:'1,0',invest:'9800'});
+  $('facadeBody').innerHTML=''; addRow('facade',{name:'Norr och söder',area:'720',windowArea:'165',uOld:'0,56',uNew:'0,20',invest:'1650'}); addRow('facade',{name:'Gavlar',area:'260',windowArea:'18',uOld:'0,62',uNew:'0,22',invest:'1790'});
+  $('windArea').value='920'; $('windUOld').value='0,42'; $('windUNew').value='0,10'; $('windInvest').value='260000';
+  $('airArea').value='2700'; $('airBefore').value='0,85'; $('airAfter').value='0,45'; $('airInvest').value='175000';
+  attachRowRemoval(); calculate();
+}
+
+function getExportData(){ return lastResult ? lastResult.exportRows : []; }
+function loadImportData(json){
+  const data = typeof json === 'string' ? JSON.parse(json) : json;
+  const src = Array.isArray(data) ? data[0] : data;
+  const fastighet = src.fastighet || src.property || {};
+  if(fastighet.id) $('propertyId').value = fastighet.id;
+  if(fastighet.namn) $('propertyName').value = fastighet.namn;
+  if(Number.isFinite(Number(fastighet.atemp))) setInput('atemp', Number(fastighet.atemp), 0);
+  if(fastighet.kommun){
+    const key = Object.entries(MUNICIPAL_PROFILES).find(([,v]) => v && v.name.toLowerCase() === String(fastighet.kommun).toLowerCase())?.[0] || 'manual';
+    $('kommun').value = key; updateMunicipality(); if(key==='manual') $('kommun').value='manual';
+  }
+  const heat = data.energibehov_varme ?? src.energibehov_varme; if(Number.isFinite(Number(heat))) setInput('heatUse', Number(heat), 0);
+  const upp = data.uppvarmning ?? src.uppvarmning; if(upp){ $('heatingType').value = upp; updateHeating(); }
+  const cop = data.cop ?? src.cop; if(Number.isFinite(Number(cop))) $('cop').value = fmt1(Number(cop));
+  return true;
+}
+window.getExportData = getExportData;
+window.loadImportData = loadImportData;
+
+$('kommun').addEventListener('change', updateMunicipality);
+$('heatingType').addEventListener('change', updateHeating);
+$('energyPrice').addEventListener('input', () => touched('energyPrice'));
+$('co2Factor').addEventListener('input', () => touched('co2Factor'));
+document.querySelectorAll('input[name="calcMode"]').forEach(r => r.addEventListener('change', updateMode));
+$('calcBtn').addEventListener('click', calculate);
+$('copyJsonBtn').addEventListener('click', () => copyText($('exportJson').value || '[]'));
+$('copyReportBtn').addEventListener('click', () => copyText(buildSummaryText()));
+$('sampleBtn').addEventListener('click', loadSample);
+$('resetBtn').addEventListener('click', resetForm);
+$('exportPdfBtn').addEventListener('click', exportPdf);
+$('addWindowBtn').addEventListener('click', () => { addRow('window'); attachRowRemoval(); });
+$('addFacadeBtn').addEventListener('click', () => { addRow('facade'); attachRowRemoval(); });
+$('reportModeBtn').addEventListener('click', () => document.body.classList.toggle('report-mode'));
+
+resetForm();
+attachRowRemoval();
+updateMode();
+updateHeating();
+</script>
+</body>
+</html>
